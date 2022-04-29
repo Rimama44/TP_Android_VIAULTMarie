@@ -7,10 +7,15 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
+import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.example.tpviaultmarie.R
 import com.example.tpviaultmarie.form.FormActivity
+import com.example.tpviaultmarie.network.Api
+import kotlinx.coroutines.launch
 import java.util.*
 
 // TODO: Rename parameter arguments, choose names that match
@@ -41,6 +46,15 @@ class TaskListFragment : Fragment() {
         val task = result.data?.getSerializableExtra("task") as Task? ?: return@registerForActivityResult
         taskList = taskList.map { if (it.id == task.id) task else it }
         refreshAdapter()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        lifecycleScope.launch {
+            val userInfo = Api.userWebService.getInfo().body()!!
+            val userInfoTextView= view?.findViewById<TextView>(R.id.user)
+            userInfoTextView?.text = "${userInfo.firstName} ${userInfo.lastName}"
+        }
     }
 
     override fun onCreateView(
