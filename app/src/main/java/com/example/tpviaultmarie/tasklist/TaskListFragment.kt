@@ -28,28 +28,26 @@ import java.util.*
  */
 class TaskListFragment : Fragment() {
     // TODO: Rename and change types of parameters
+    private val viewModel: TaskListViewModel by viewModels()
 
-    private var taskList = listOf(
-        Task(id = "id_1", title = "Task 1", description = "description 1"),
-        Task(id = "id_2", title = "Task 2"),
-        Task(id = "id_3", title = "Task 3")
-    )
     private val adapter = TaskListAdapter()
 
     private val createTask = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val task = result.data?.getSerializableExtra("task") as Task? ?: return@registerForActivityResult
-        taskList = taskList + task
-        refreshAdapter()
+        viewModel.create(task)
+        //taskList = taskList + task
     }
 
     private val updateTask = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val task = result.data?.getSerializableExtra("task") as Task? ?: return@registerForActivityResult
-        taskList = taskList.map { if (it.id == task.id) task else it }
-        refreshAdapter()
+        viewModel.update(task)
+        viewModel.refresh()
+        //taskList = taskList.map { if (it.id == task.id) task else it }
     }
 
     override fun onResume() {
         super.onResume()
+        viewModel.refresh()
         lifecycleScope.launch {
             val userInfo = Api.userWebService.getInfo().body()!!
             val userInfoTextView= view?.findViewById<TextView>(R.id.user)
@@ -62,7 +60,6 @@ class TaskListFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        adapter.submitList(taskList);
         // Inflate the layout for this fragment
         val rootView = inflater.inflate(R.layout.fragment_task_list, container, false)
         return rootView
@@ -77,17 +74,19 @@ class TaskListFragment : Fragment() {
             createTask.launch(intent)
         }
         adapter.onClickDelete = { task ->
-            taskList = taskList - task
-            refreshAdapter()
+            viewModel.delete(task)
+            //taskList = taskList - task
         }
         adapter.onClickUpdate = { task ->
             val intent = Intent(context, FormActivity::class.java)
             intent.putExtra("task", task)
             updateTask.launch(intent)
         }
+        lifecycleScope.launch { // on lance une coroutine car `collect` est `suspend`
+            viewModel.tasksStateFlow.collect { newList ->
+                adapter.submitList(newList);
+            }
+        }
     }
 
-    private fun refreshAdapter(){
-        adapter.submitList(taskList);
-    }
 }

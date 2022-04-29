@@ -1,3 +1,13 @@
 package com.example.tpviaultmarie.tasklist
 
-data class Task(var id: String, var title: String, var description: String = " "): java.io.Serializable
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class Task(
+    @SerialName("id")
+    var id: String,
+    @SerialName("title")
+    var title: String,
+    @SerialName("description")
+    var description: String = " "): java.io.Serializable
